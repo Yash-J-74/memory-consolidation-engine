@@ -1,0 +1,55 @@
+{
+  "sessions": [
+    {
+      "index": 0,
+      "text": "User: I prefer concise answers. Agent: Noted. User: I work in fintech.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "ADD"},
+        {"extraction_order": 1, "expected_decision": "ADD"}
+      ]
+    },
+    {
+      "index": 1,
+      "text": "User: I'm usually available mornings. I'm based in London.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "ADD"},
+        {"extraction_order": 1, "expected_decision": "ADD"}
+      ]
+    },
+    {
+      "index": 2,
+      "text": "User: Actually I'd prefer detailed explanations going forward.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "UPDATE"}
+      ]
+    },
+    {
+      "index": 3,
+      "text": "User: I've moved to Singapore recently.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "UPDATE"}
+      ]
+    },
+    {
+      "index": 4,
+      "text": "User: I prefer phone over email for urgent issues.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "CONFLICT"}
+      ]
+    },
+    {
+      "index": 5,
+      "text": "User: I prefer concise answers. Please keep replies brief.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "NOOP"}
+      ]
+    },
+    {
+      "index": 6,
+      "text": "User: I prefer phone over email for urgent issues, but only for work emergencies.",
+      "expected_memories": [
+        {"extraction_order": 0, "expected_decision": "CONFLICT"}
+      ]
+    }
+  ]
+}
