@@ -4,12 +4,12 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 
-from app.api import IngestSessionRequest, IngestionResult
+from app.api import IngestSessionRequest, IngestionResult, SessionTrace, TraceStep
 from app.db.database import get_db
 from app.pipelines.extraction import ExtractionPipeline
 from app.pipelines.consolidation import ConsolidationPipeline
 from app.db.models import Session, Memory, Conflict, ConsolidationLog
-from app.db.queries import insert_session, insert_memory, mark_superseded, insert_conflict, log_consolidation_decision, get_active_memories
+from app.db.queries import insert_session, insert_memory, mark_superseded, insert_conflict, log_consolidation_decision, get_active_memories, get_session_by_id, get_consolidation_logs_by_session, get_memory_by_id
 from app.core.logger import logger
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
@@ -125,15 +125,25 @@ async def ingest_session(
                 counts["conflict"] += 1
 
             # 4. Audit Log
+            matched_mem_id = None
+            if result.decision in ["UPDATE", "CONFLICT"]:
+                matched_mem_id = result.existing_memory_id
+            
             log = ConsolidationLog(
                 id=f"log_{uuid.uuid4().hex[:12]}",
                 user_id=request.user_id,
+                session_id=session_id,
                 new_memory_id=new_memory_id if result.decision != "NOOP" else "disposed",
                 decision=result.decision,
                 existing_memory_id=result.existing_memory_id,
+                matched_memory_id=matched_mem_id,
                 similarity_score=result.similarity_score or 0.0,
                 llm_called=1 if result.llm_called else 0,
                 reasoning=result.reasoning or "",
+                extracted_content=ext_mem.content,
+                extracted_type=ext_mem.memory_type,
+                confidence=ext_mem.confidence,
+                threshold=consolidation_pipeline._threshold,
                 extraction_index=idx,
                 created_at=None
             )
@@ -164,6 +174,7 @@ async def ingest_session(
         update_count=counts["update"],
         conflict_count=counts["conflict"],
         skipped_count=counts["skipped"],
+        duration_ms=duration_ms,
         created_at=None
     )
     insert_session(db, session_record)
@@ -179,4 +190,41 @@ async def ingest_session(
         conflict=counts["conflict"],
         skipped=counts["skipped"],
         duration_ms=duration_ms
+    )
+
+@router.get("/{session_id}/trace", response_model=SessionTrace)
+async def get_session_trace(
+    session_id: str,
+    db: sqlite3.Connection = Depends(get_db)
+):
+    session = get_session_by_id(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    logs = get_consolidation_logs_by_session(db, session_id)
+    
+    steps = []
+    llm_calls = 0
+    for log in logs:
+        if log.llm_called:
+            llm_calls += 1
+            
+        step = TraceStep(
+            order=log.extraction_index,
+            memory_content=log.extracted_content,
+            memory_type=log.extracted_type,
+            confidence=log.confidence,
+            similarity=log.similarity_score,
+            threshold=log.threshold,
+            decision=log.decision,
+            matched_memory_id=log.matched_memory_id,
+            superseded_memory_id=log.matched_memory_id if log.decision == "UPDATE" else None
+        )
+        steps.append(step)
+    
+    return SessionTrace(
+        session_id=session_id,
+        duration_ms=session.duration_ms,
+        llm_calls=llm_calls,
+        steps=steps
     )

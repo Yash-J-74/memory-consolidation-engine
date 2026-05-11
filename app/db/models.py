@@ -29,6 +29,7 @@ class Session:
     update_count: int = 0
     conflict_count: int = 0
     skipped_count: int = 0
+    duration_ms: float = 0.0
     created_at: Optional[str] = None
 
 @dataclass
@@ -45,11 +46,17 @@ class Conflict:
 class ConsolidationLog:
     id: str
     user_id: str
+    session_id: str
     new_memory_id: str
     decision: str
     existing_memory_id: Optional[str] = None
+    matched_memory_id: Optional[str] = None
     similarity_score: Optional[float] = None
     llm_called: int = 0
     reasoning: Optional[str] = None
+    extracted_content: str = ""
+    extracted_type: str = ""
+    confidence: float = 0.0
+    threshold: float = 0.82
     extraction_index: int = 0
     created_at: Optional[str] = None

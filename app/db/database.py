@@ -55,6 +55,7 @@ def init_db(conn: sqlite3.Connection):
         update_count    INTEGER NOT NULL DEFAULT 0,
         conflict_count  INTEGER NOT NULL DEFAULT 0,
         skipped_count   INTEGER NOT NULL DEFAULT 0,
+        duration_ms     REAL NOT NULL DEFAULT 0.0,
         created_at      DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
 
@@ -73,12 +74,18 @@ def init_db(conn: sqlite3.Connection):
     CREATE TABLE IF NOT EXISTS consolidation_log (
         id              TEXT PRIMARY KEY,
         user_id         TEXT NOT NULL,
+        session_id      TEXT NOT NULL,
         new_memory_id   TEXT NOT NULL,
         existing_memory_id TEXT,
+        matched_memory_id TEXT,
         similarity_score REAL,
         decision        TEXT NOT NULL CHECK (decision IN ('ADD', 'NOOP', 'UPDATE', 'CONFLICT')),
         llm_called      INTEGER NOT NULL DEFAULT 0,
         reasoning       TEXT,
+        extracted_content TEXT,
+        extracted_type  TEXT,
+        confidence      REAL NOT NULL DEFAULT 0.0,
+        threshold       REAL NOT NULL DEFAULT 0.82,
         extraction_index INTEGER NOT NULL DEFAULT 0,
         created_at      DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
@@ -92,6 +99,9 @@ def init_db(conn: sqlite3.Connection):
 
     CREATE INDEX IF NOT EXISTS idx_conflicts_user_resolved
         ON conflicts (user_id, resolved);
+
+    CREATE INDEX IF NOT EXISTS idx_consolidation_log_session_id
+        ON consolidation_log (session_id);
     """
     conn.executescript(schema)
     conn.commit()

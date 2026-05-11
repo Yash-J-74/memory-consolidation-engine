@@ -50,6 +50,24 @@ class IngestionResult(BaseModel):
     skipped: int
     duration_ms: float
 
+class TraceStep(BaseModel):
+    order: int
+    memory_content: str
+    memory_type: str
+    confidence: float
+    similarity: Optional[float] = None
+    threshold: float
+    decision: str
+    matched_memory_id: Optional[str] = None
+    superseded_memory_id: Optional[str] = None
+
+class SessionTrace(BaseModel):
+    session_id: str
+    duration_ms: float
+    llm_calls: int
+    steps: List[TraceStep]
+    duration_ms: float
+
 class ThresholdSweepResult(BaseModel):
     threshold: float
     false_merges: int
