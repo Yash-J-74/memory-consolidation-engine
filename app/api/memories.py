@@ -57,13 +57,13 @@ async def get_history(
     memories = get_memory_history(db, user_id, status, memory_type)
     return memories
 
-@router.get("/{user_id}/conflicts", response_model=List[ConflictRecord]) # Returns Conflict records combined with memory bodies if needed, but FRS specifies ConflictRecord shape with objects inside. Wait, FRS says memory_id_a is in conflict DB.
+@router.get("/{user_id}/conflicts", response_model=List[ConflictRecord]) # Returns Conflict records combined with memory bodies if needed, or we can have a separate endpoint to get conflict details by ID if we want to keep this light.
 async def get_user_conflicts(
     user_id: str,
     resolved: bool = False,
     db: sqlite3.Connection = Depends(get_db)
 ):
-    # FRS format for conflicts endpoint (with embedded MemoryRecord)
+    # Format for conflicts endpoint (with embedded MemoryRecord)
     conflicts_db = get_conflicts(db, user_id, resolved)
     results = []
     for c in conflicts_db:

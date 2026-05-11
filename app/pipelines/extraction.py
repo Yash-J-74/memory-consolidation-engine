@@ -63,7 +63,7 @@ class ExtractionPipeline:
 		prompt = EXTRACTION_PROMPT.format(conversation=conversation)
 		raw = await self._completion(prompt, self._temperature)
 
-		# FRS: parse failures are dropped as empty extraction output.
+		# Parse failures are dropped as empty extraction output.
 		try:
 			parsed = self._json_parser(raw)
 		except Exception:

@@ -8,7 +8,7 @@ from app.core.logger import logger
 async def generate_completion(prompt: str, temperature: float = 0.1) -> str:
     """
     Calls the local Ollama instance.
-    FRS §8.3: Explictly NO automatic retries. Bubbles up Timeout or Error immediately.
+    Explictly NO automatic retries. Bubbles up Timeout or Error immediately.
     """
     url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/chat"
     payload = {
@@ -38,7 +38,7 @@ async def generate_completion(prompt: str, temperature: float = 0.1) -> str:
 # def clean_llm_json(raw: str) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
 #     """
 #     Strips markdown code fences (```json ... ```) and parses the strict inner JSON.
-#     FRS §6.1 Requirement for Gemma 4B's extraneous outputs.
+#     Requirement for Gemma 4B's extraneous outputs.
 #     """
 #     # Attempt to find the first JSON array or object
 #     # Often models prefix with text like "Here is the output: ```json\n[{...}]\n```"
