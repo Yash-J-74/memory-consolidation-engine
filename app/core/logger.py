@@ -12,8 +12,8 @@ def _format_record(record):
     )
     if record["extra"]:
         extra_items = ", ".join(f"{key}={value}" for key, value in record["extra"].items())
-        return f"{base} | {extra_items}"
-    return base
+        return f"{base} | {extra_items}\n"
+    return f"{base}\n"
 
 def setup_logger():
     """Configure the global logger with a readable text format."""
