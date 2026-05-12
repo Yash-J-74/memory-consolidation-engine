@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; }
+:root {
+    --lane-pref-bg: #EEEDFE; --lane-pref-text: #534AB7;
+    --lane-fact-bg: #E1F5EE; --lane-fact-text: #0F6E56;
+    --lane-event-bg: #FAEEDA; --lane-event-text: #8a590b;
+
+    --node-pref-bg: #F4F3FF; --node-pref-border: #534AB7; --node-pref-text: #3C3489;
+    --node-fact-bg: #F0FAF6; --node-fact-border: #0F6E56; --node-fact-text: #085041;
+    --node-event-bg: #FDF8F0; --node-event-border: #8A590B; --node-event-text: #633806;
+    
+    --node-conflict-bg: #FFF3F3; --node-conflict-border: #E24B4A; --node-conflict-text: #A32D2D;
+    
+    --color-text-primary: #1e1e1e;
+    --color-text-secondary: #555;
+    --color-text-tertiary: #888;
+    --color-border-secondary: #ccc;
+    --color-border-tertiary: #eaeaea;
+    --color-background-secondary: #f9f9f9;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --lane-pref-bg: #1c1836; --lane-pref-text: #b1a7f0;
+        --lane-fact-bg: #0b2e23; --lane-fact-text: #55c7a9;
+        --lane-event-bg: #382405; --lane-event-text: #eebf74;
+
+        --node-pref-bg: #221d40; --node-pref-border: #6d61d1; --node-pref-text: #d0c8fa;
+        --node-fact-bg: #0e3d2f; --node-fact-border: #21a580; --node-fact-text: #a8ebd9;
+        --node-event-bg: #452b02; --node-event-border: #c2811d; --node-event-text: #f7d5a1;
+
+        --node-conflict-bg: #4a1c1c; --node-conflict-border: #f06a6a; --node-conflict-text: #fbc2c2;
+
+        --color-text-primary: #fafafa;
+        --color-text-secondary: #aaa;
+        --color-text-tertiary: #777;
+        --color-border-secondary: #555;
+        --color-border-tertiary: #444;
+        --color-background-secondary: #252525;
+    }
+}
+body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.mtype{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;text-transform:uppercase;letter-spacing:.04em}
+.mt-p{background:#EEEDFE;color:#3C3489}
+.mt-f{background:#E1F5EE;color:#085041}
+.mt-e{background:#FAEEDA;color:#633806}
+
+.dec { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: .04em; padding: 2px 8px; border-radius: 100px; text-transform: uppercase; }
+.d-add { background: #e1f5ee; color: #0f6e56; }
+.d-upd { background: #E6F1FB; color: #185FA5; }
+.d-con { background: #fcebeb; color: #a32d2d; }
+
+.mem-detail {
+    display: none; position: absolute; width: 300px;
+    padding: 12px 14px; background: var(--color-background-secondary);
+    border-radius: 8px; border: 1px solid var(--color-border-secondary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); animation: fadeIn .2s ease;
+    z-index: 100;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.close-btn { background:none; border:none; color:var(--color-text-tertiary); cursor:pointer; font-size:14px; padding:0; }
+.close-btn:hover { color:var(--color-text-primary); }
+
+svg { overflow: visible; font-family: inherit; }
+.ts { font-size: 10px; font-weight: 500; fill: var(--color-text-secondary); }
+.th { font-size: 12px; font-weight: 500; fill: var(--color-text-primary); }
+</style>
+</head>
+<body>
+
+<div style="width: 100%; height: 100%; overflow-x: auto; overflow-y: auto;">
+    <svg id="graph-svg" width="800" height="600"></svg>
+</div>
+
+<!-- Node detail panel -->
+<div class="mem-detail" id="mem-detail">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+            <p id="md-content" style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px;line-height:1.4"></p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <span id="md-type" class="mtype"></span>
+                <span id="md-src" class="dec"></span>
+            </div>
+        </div>
+        <button class="close-btn" onclick="document.getElementById('mem-detail').style.display='none'">✕</button>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--color-text-secondary)">
+        <span id="md-conf"></span>
+        <span id="md-session"></span>
+        <span id="md-id" style="color:var(--color-text-tertiary)"></span>
+    </div>
+</div>
+
+<script>
+const GRAPH_DATA = __INJECT_JSON_HERE__;
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+const config = {
+    colW: 200, rowH: 220, startX: 100, startY: 60,
+    boxW: 152, boxH: 44, paddingY: 10,
+    typeMap: { 'preference': 0, 'fact': 1, 'event': 2 }
+};
+
+let nodesMap = {};
+
+function truncate(str, max = 30) {
+    if (!str) return '';
+    return str.length > max ? str.slice(0, max) + '...' : str;
+}
+
+function getTypeClass(type) {
+    const t = (type||'').toLowerCase();
+    if (t === 'preference') return 'mt-p';
+    if (t === 'event') return 'mt-e';
+    return 'mt-f';
+}
+
+function showDetail(id) {
+    const memory = nodesMap[id];
+    if (!memory) return;
+    
+    document.getElementById('md-content').innerText = memory.content || "Empty content";
+    const typeEl = document.getElementById('md-type');
+    const t = (memory.memory_type || 'fact').toLowerCase();
+    typeEl.className = `mtype ${getTypeClass(t)}`;
+    typeEl.innerText = t;
+    
+    const srcEl = document.getElementById('md-src');
+    if (memory.status === 'active') { srcEl.className = 'dec d-add'; srcEl.innerText = 'ACTIVE'; }
+    else { srcEl.className = 'dec d-nop'; srcEl.innerText = 'SUPERSEDED'; }
+    
+    document.getElementById('md-conf').innerText = `Conf: ${memory.confidence || 0}`;
+    document.getElementById('md-session').innerText = `Session: ${memory.session_id || 'Unknown'}`;
+    document.getElementById('md-id').innerText = memory.id.substring(0,8);
+    
+    const panel = document.getElementById('mem-detail');
+    panel.style.display = 'block';
+
+    // Position panel near the mouse event if available, otherwise fallback
+    const evt = window.event;
+    if (evt) {
+        let leftPos = evt.pageX + 15;
+        let topPos = evt.pageY + 15;
+        // Don't clip off the right edge
+        if (leftPos + 320 > window.innerWidth) {
+            leftPos = window.innerWidth - 320;
+        }
+        panel.style.left = leftPos + 'px';
+        panel.style.top = topPos + 'px';
+    }
+}
+
+function buildGraph(data) {
+    const svg = document.getElementById('graph-svg');
+    svg.innerHTML = `
+        <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="#378ADD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+        </defs>
+    `;
+    
+    if(!data || (!data.history && !data.memories)) return;
+    
+    const history = data.history || [];
+    const conflicts = data.conflicts || [];
+    
+    // Convert array to map and group by session
+    const sessionsSet = new Set();
+    history.forEach(m => {
+        nodesMap[m.id] = m;
+        if(m.session_id) sessionsSet.add(m.session_id);
+    });
+    
+    let sessions = Array.from(sessionsSet).sort(); // simple chronological sort
+    if(sessions.length === 0) sessions = ['Unknown'];
+    
+    // Build Swimlane Backgrounds & Labels
+    const typeLabels = ['PREFERENCES', 'FACTS', 'EVENTS'];
+    const typeThemes = [
+        {bg:'var(--lane-pref-bg)', text:'var(--lane-pref-text)'}, 
+        {bg:'var(--lane-fact-bg)', text:'var(--lane-fact-text)'}, 
+        {bg:'var(--lane-event-bg)', text:'var(--lane-event-text)'}
+    ];
+    
+    const totalW = config.startX + (sessions.length * config.colW) + 50;
+    const totalH = config.startY + (3 * config.rowH) + 50;
+    svg.setAttribute('width', Math.max(800, totalW));
+    svg.setAttribute('height', Math.max(600, totalH));
+    
+    typeLabels.forEach((lbl, i) => {
+        const y = config.startY + (i * config.rowH);
+        svg.insertAdjacentHTML('beforeend', `<rect x="10" y="${y}" width="${totalW-20}" height="${config.rowH - 20}" rx="8" fill="${typeThemes[i].bg}"/>`);
+        svg.insertAdjacentHTML('beforeend', `<text class="ts" x="20" y="${y+18}" style="fill:${typeThemes[i].text};letter-spacing:.07em;">${lbl}</text>`);
+    });
+    
+    // Build Column Lines & Labels
+    sessions.forEach((s, idx) => {
+        const cx = config.startX + (idx * config.colW) + (config.colW/2);
+        svg.insertAdjacentHTML('beforeend', `<text class="ts" x="${cx}" y="45" text-anchor="middle" style="fill:var(--color-text-tertiary)">${s === 'Unknown' ? 'Session ?' : 'Session ' + s}</text>`);
+        if(idx > 0) {
+            const lx = config.startX + (idx * config.colW);
+            svg.insertAdjacentHTML('beforeend', `<line x1="${lx}" y1="50" x2="${lx}" y2="${totalH-20}" stroke="var(--color-border-tertiary)" stroke-width="1" stroke-dasharray="2 5"/>`);
+        }
+    });
+
+    // Compute coordinate mapping
+    const layout = {};
+    const swimlaneCounts = {0:{}, 1:{}, 2:{}}; // type -> sessionIdx -> count
+    
+    history.forEach(m => {
+        let tIdx = config.typeMap[(m.memory_type||'').toLowerCase()] ?? 1;
+        let sIdx = sessions.indexOf(m.session_id);
+        if(sIdx === -1) sIdx = 0;
+        
+        if(!swimlaneCounts[tIdx][sIdx]) swimlaneCounts[tIdx][sIdx] = 0;
+        
+        const stackOffset = swimlaneCounts[tIdx][sIdx] * (config.boxH + config.paddingY);
+        
+        const x = config.startX + (sIdx * config.colW) + (config.colW/2) - (config.boxW/2);
+        const y = config.startY + (tIdx * config.rowH) + 35 + stackOffset;
+        
+        layout[m.id] = {x, y, cx: x + config.boxW/2, cy: y + config.boxH/2, m};
+        swimlaneCounts[tIdx][sIdx]++;
+    });
+    
+    // Draw Conflict Edges
+    const conflictPairs = new Set();
+    conflicts.forEach(c => {
+        let idA = typeof c.memory_id_a === 'object' ? c.memory_id_a?.id : c.memory_id_a;
+        let idB = typeof c.memory_id_b === 'object' ? c.memory_id_b?.id : c.memory_id_b;
+        if(idA && idB && layout[idA] && layout[idB]) {
+            conflictPairs.add(idA); 
+            conflictPairs.add(idB);
+            
+            const p1 = layout[idA], p2 = layout[idB];
+            const midX = (p1.cx + p2.cx) / 2;
+            const yOffset = Math.abs(p1.cx - p2.cx) > 10 ? 40 : 0; // arch over if spanning columns
+            svg.insertAdjacentHTML('beforeend', `<path d="M ${p1.cx} ${p1.cy - 10} C ${p1.cx} ${p1.cy - yOffset - 20}, ${p2.cx} ${p2.cy - yOffset - 20}, ${p2.cx} ${p2.cy - 10}" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="5 3"/>`);
+        }
+    });
+
+    // Draw Supersession Edges (Arrows)
+    history.forEach(m => {
+        if(m.superseded_by && layout[m.id] && layout[m.superseded_by]) {
+            const origin = layout[m.id];
+            const target = layout[m.superseded_by];
+            
+            const startX = origin.x + config.boxW;
+            const startY = origin.cy;
+            const endX = target.x - 5;
+            const endY = target.cy;
+            
+            const yOffset = Math.abs(startY - endY) < 10 ? 30 : 0; // drop a curve if exactly horizontally aligned
+            svg.insertAdjacentHTML('beforeend', `<path d="M ${startX} ${startY} C ${startX + 50} ${startY + yOffset}, ${endX - 50} ${endY + yOffset}, ${endX} ${endY}" fill="none" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arr)"/>`);
+        }
+    });
+
+    // Draw Nodes
+    history.forEach(m => {
+        const pos = layout[m.id];
+        if(!pos) return;
+        
+        const isSuperseded = m.status !== 'active';
+        const isConflict = conflictPairs.has(m.id);
+        
+        let bgColor, borderColor, textColor;
+        let opacity = isSuperseded ? 0.45 : 1.0;
+        
+        if (isConflict) {
+            bgColor = 'var(--node-conflict-bg)';
+            borderColor = 'var(--node-conflict-border)';
+            textColor = 'var(--node-conflict-text)';
+        } else {
+            let tIdx = config.typeMap[(m.memory_type||'').toLowerCase()] ?? 1;
+            if(tIdx === 0) { bgColor = 'var(--node-pref-bg)'; borderColor = 'var(--node-pref-border)'; textColor = 'var(--node-pref-text)'; }
+            else if(tIdx === 1) { bgColor = 'var(--node-fact-bg)'; borderColor = 'var(--node-fact-border)'; textColor = 'var(--node-fact-text)'; }
+            else { bgColor = 'var(--node-event-bg)'; borderColor = 'var(--node-event-border)'; textColor = 'var(--node-event-text)'; }
+        }
+
+        let dashStyle = isSuperseded ? 'stroke-dasharray:4 3;' : '';
+        let rectStyle = `fill:${bgColor};stroke:${borderColor};stroke-width:${isConflict ? 1.5 : 1};${dashStyle}`;
+        let actualTextColor = isSuperseded ? 'var(--color-text-secondary)' : textColor;
+        
+        const groupHTML = `
+        <g class="node" style="opacity:${opacity};cursor:pointer" onclick="showDetail('${m.id}')">
+            <rect x="${pos.x}" y="${pos.y}" width="${config.boxW}" height="${config.boxH}" rx="7" style="${rectStyle}"/>
+            <foreignObject x="${pos.x}" y="${pos.y}" width="${config.boxW}" height="${config.boxH}">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; text-align:center; padding: 4px 6px; box-sizing: border-box;">
+                    <span style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; font-size: 11px; font-weight: 500; color: ${actualTextColor}; line-height: 1.2;">
+                        ${m.content || ''}
+                    </span>
+                </div>
+            </foreignObject>
+            ${isSuperseded ? `<line x1="${pos.x+10}" y1="${pos.cy}" x2="${pos.x+config.boxW-10}" y2="${pos.cy}" stroke="var(--color-text-secondary)" stroke-width="1" opacity="0.5"/>` : ''}
+        </g>
+        `;
+        svg.insertAdjacentHTML('beforeend', groupHTML);
+    });
+}
+
+// Render on load
+window.onload = () => buildGraph(GRAPH_DATA);
+</script>
+</body>
+</html>

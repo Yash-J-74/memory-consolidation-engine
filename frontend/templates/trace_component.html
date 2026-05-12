@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* CSS Extracted from memory_consolidation_ui_mockup.html */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Streamlit compatible theme variables */
+    --color-text-primary: #1e1e1e;
+    --color-text-secondary: #555;
+    --color-text-tertiary: #888;
+    --color-text-success: #0f6e56;
+    --color-text-danger: #a32d2d;
+    --color-border-tertiary: #eaeaea;
+    --color-background-primary: #fff;
+    --color-background-secondary: #f9f9f9;
+    --color-background-success: #e1f5ee;
+    --color-background-danger: #fcebeb;
+    --border-radius-lg: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        --color-text-primary: #fafafa;
+        --color-text-secondary: #aaa;
+        --color-text-tertiary: #777;
+        --color-text-success: #4cdbaf;
+        --color-text-danger: #f09595;
+        --color-border-tertiary: #444;
+        --color-background-primary: #1e1e1e;
+        --color-background-secondary: #252525;
+        --color-background-success: #0b3d30;
+        --color-background-danger: #5a1919;
+    }
+}
+
+.dec { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: .04em; padding: 2px 8px; border-radius: 100px; text-transform: uppercase; }
+.d-add { background: #e1f5ee; color: #0f6e56; } /* Using raw colors to guarantee it maps to mockup */
+.d-upd { background: #E6F1FB; color: #185FA5; }
+.d-con { background: #fcebeb; color: #a32d2d; }
+.d-nop { background: #f9f9f9; color: #555; }
+
+@media (prefers-color-scheme: dark) {
+    .d-add { background: #0b3d30; color: #4cdbaf; }
+    .d-upd { background: #133a63; color: #87bef5; }
+    .d-con { background: #5a1919; color: #f09595; }
+    .d-nop { background: #252525; color: #aaa; }
+}
+
+.mtype { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 100px; text-transform: uppercase; letter-spacing: .04em; }
+.mt-p { background: #EEEDFE; color: #3C3489; }
+.mt-f { background: #E1F5EE; color: #085041; }
+.mt-e { background: #FAEEDA; color: #633806; }
+
+@media (prefers-color-scheme: dark) {
+    .mt-p { background: #2b2559; color: #b4aded; }
+    .mt-f { background: #074034; color: #87e0c9; }
+    .mt-e { background: #4a2803; color: #f2d7b6; }
+}
+
+.ptc { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; background: var(--color-background-secondary); border-radius: 8px; margin-bottom: 8px; border: 0.5px solid var(--color-border-tertiary); opacity: 0; transform: translateY(6px); transition: opacity .4s ease, transform .4s ease; }
+.ptc.upd { border-color: #B5D4F4; background: #F2F7FD; }
+.ptc.add { border-color: #9FE1CB; background: #F0FFF9; }
+.ptc.con { border-color: #F09595; background: #FFF3F3; }
+
+@media (prefers-color-scheme: dark) {
+    .ptc.upd { border-color: #2b5582; background: #162436; }
+    .ptc.add { border-color: #1e664d; background: #132b24; }
+    .ptc.con { border-color: #8c3636; background: #3b1c1c; }
+}
+
+.ptc.show { opacity: 1; transform: translateY(0); }
+.pt-ico { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; font-size: 15px; font-weight: bold; }
+.pt-body { flex: 1; min-width: 0; }
+.pt-text { font-size: 13px; color: var(--color-text-primary); margin-bottom: 5px; line-height: 1.4; display:block; }
+.pt-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom:4px; }
+.pt-sim { font-size: 11px; color: var(--color-text-secondary); }
+.pt-sup { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.sup-old { text-decoration: line-through; opacity: .55; }
+.conf-bg { height: 3px; background: var(--color-border-tertiary); border-radius: 2px; margin: 6px 0; }
+.conf-fill { height: 3px; border-radius: 2px; background: #378ADD;}
+
+.stage-row { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--color-background-secondary); border-radius: 8px; margin-bottom: 14px; font-size: 11px; }
+.stg { display: flex; align-items: center; gap: 4px; color: var(--color-text-success); font-weight: 500;}
+.stg-sep { color: var(--color-text-tertiary); }
+.header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+/* Replay Button */
+button { font-size: 11px; padding: 4px 10px; cursor: pointer; border-radius: 4px; border: 1px solid var(--color-border-tertiary); background: var(--color-background-primary); color: var(--color-text-primary); }
+button:hover { background: var(--color-background-secondary); }
+
+/* SVG Icons - mapped directly inside logic for simplicity */
+</style>
+</head>
+<body>
+
+<div id="p-pipe" class="vpanel">
+    <div class="header-row">
+        <span id="trace-title" style="font-size:12px;color:var(--color-text-secondary)">Loading trace...</span>
+        <button onclick="replayTrace()"><span style="margin-right:2px">▶</span> Replay</button>
+    </div>
+    
+    <div class="stage-row" id="trace-stage">
+        <span class="stg">✓ Extraction</span>
+        <span class="stg-sep">→</span>
+        <span class="stg">✓ Consolidation</span>
+        <span class="stg-sep">→</span>
+        <span class="stg">✓ Storage</span>
+        <span id="trace-stats" style="margin-left:auto;color:var(--color-text-tertiary)">...</span>
+    </div>
+
+    <div id="trace-container"></div>
+    
+    <p id="trace-footer" style="font-size:11px;color:var(--color-text-tertiary);margin:10px 0 0"></p>
+</div>
+
+<script>
+// Will be injected by Streamlit
+const TRACE_DATA = __INJECT_JSON_HERE__;
+
+function getIconForDecision(decision) {
+    if(decision === 'ADD') return { bg: '#E1F5EE', c: '#085041', char: '+' };
+    if(decision === 'UPDATE') return { bg: '#E6F1FB', c: '#185FA5', char: '↑' };
+    if(decision === 'CONFLICT') return { bg: '#FFF3F3', c: '#A32D2D', char: '!' };
+    return { bg: '#f9f9f9', c: '#777', char: '−' };
+}
+
+function getTypeClass(type) {
+    const t = (type || '').toLowerCase();
+    if(t === 'preference') return 'mt-p';
+    if(t === 'event') return 'mt-e';
+    return 'mt-f'; // fact default
+}
+
+function getDecisionClass(decision) {
+    if(decision === 'ADD') return 'd-add';
+    if(decision === 'UPDATE') return 'd-upd';
+    if(decision === 'CONFLICT') return 'd-con';
+    return 'd-nop';
+}
+
+function getRowClass(decision) {
+    if(decision === 'ADD') return 'add';
+    if(decision === 'UPDATE') return 'upd';
+    if(decision === 'CONFLICT') return 'con';
+    return '';
+}
+
+function buildConfigBarHTML(conf) {
+    const w = Math.min(Math.max((conf || 0) * 100, 0), 100);
+    return `<div class="conf-bg"><div class="conf-fill" style="width:${w}%"></div></div>`;
+}
+
+function renderTrace(data) {
+    if(!data || !data.steps) {
+        document.getElementById('trace-title').innerText = "No trace data available.";
+        return;
+    }
+    
+    // Update Summaries
+    const s_id = data.session_id ? data.session_id.substring(0,8) : 'unknown';
+    const c_ext = data.steps.length;
+    document.getElementById('trace-title').innerText = `Session ${s_id} · ${c_ext} memories analyzed`;
+    document.getElementById('trace-stats').innerText = `${data.duration_ms || 0}ms · ${data.llm_calls || 0} LLM calls`;
+    
+    // Tally Footer
+    let skips = 0, noops = 0;
+    data.steps.forEach(s => {
+        if(s.decision === 'NOOP') noops++;
+    });
+    document.getElementById('trace-footer').innerText = `${skips} skipped · ${noops} NOOP · consolidation_log updated`;
+
+    const container = document.getElementById('trace-container');
+    container.innerHTML = '';
+    
+    // Build Nodes
+    data.steps.forEach((step, idx) => {
+        const dColor = getIconForDecision(step.decision);
+        
+        let supHTML = '';
+        if(step.superseded_memory_id || step.matched_memory_id) {
+            const tgt = step.superseded_memory_id || step.matched_memory_id;
+            supHTML = `<div class="pt-sup">→ Target ID: <span class="sup-old">${tgt.substring(0,8)}</span></div>`;
+        }
+        
+        const typeStr = step.memory_type || 'fact';
+        
+        const html = `
+        <div class="ptc ${getRowClass(step.decision)}" id="ptc-${idx}">
+            <div class="pt-ico" style="background:${dColor.bg};color:${dColor.c}">${dColor.char}</div>
+            <div class="pt-body">
+                <div class="pt-text">"${step.memory_content}"</div>
+                ${buildConfigBarHTML(step.confidence)}
+                <div class="pt-meta">
+                    <span class="mtype ${getTypeClass(typeStr)}">${typeStr}</span>
+                    <span class="dec ${getDecisionClass(step.decision)}">${step.decision}</span>
+                    <span class="pt-sim">similarity ${(step.similarity || 0).toFixed(2)} · θ=${step.threshold || 0}</span>
+                </div>
+                ${supHTML}
+            </div>
+        </div>`;
+        
+        container.insertAdjacentHTML('beforeend', html);
+    });
+    
+    // Staggered Animation
+    animateNodes(data.steps.length);
+}
+
+function animateNodes(count) {
+    for(let i=0; i<count; i++) {
+        const el = document.getElementById(`ptc-${i}`);
+        if(el) {
+            el.classList.remove('show');
+            setTimeout(() => {
+                el.classList.add('show');
+            }, 100 + (i * 250));
+        }
+    }
+}
+
+function replayTrace() {
+    if(TRACE_DATA && TRACE_DATA.steps) {
+        animateNodes(TRACE_DATA.steps.length);
+    }
+}
+
+// Init
+window.onload = function() {
+    renderTrace(TRACE_DATA);
+};
+</script>
+</body>
+</html>
