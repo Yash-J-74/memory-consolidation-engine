@@ -10,8 +10,8 @@ Extract discrete, persistent facts about the user from the conversation below.
 
 RULES:
 - Extract only information that would be useful to remember across future conversations
-- Do NOT extract transient details (e.g. "user said hello")
-- Do NOT extract historical transitions (e.g. avoid "user previously used React"). Extract only the absolute current state.
+- Do NOT extract transient details (e.g. "user said hello", "user is interacting with AI assistant")
+- Include chronological markers or change-actions directly in the extracted fact if the user mentions a change in state (e.g., use "User recently moved to Seattle" or "User has switched to requesting detailed explanations" instead of just "User lives in Seattle"). This is CRITICAL for downstream update detection.
 - Do NOT guess or extract implied opposites (e.g. if user states a preference for mornings, do not infer they are unavailable in the afternoons).
 - Each memory must be a single, self-contained declarative statement
 - Return ONLY a JSON array. No explanation, no markdown, no preamble.

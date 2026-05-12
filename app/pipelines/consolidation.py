@@ -52,10 +52,10 @@ Given an EXISTING memory and a NEW memory, output exactly one decision.
 DECISION DEFINITIONS:
 - NOOP: New memory means the exact same thing as existing. Discard new. (rewordings, paraphrases)
 - ADD: New memory is about a genuinely different thing, or adds a specific condition/narrowing to an existing broad fact. Keep both. (different topic, different condition, orthogonal fact)
-- UPDATE: New memory explicitly supersedes existing due to a real-world change or a direct correction. Replace existing. (moved cities, switched tools, changed role)
-- CONFLICT: New memory contradicts existing with no evidence of change. Flag both. (same topic, opposite claim, conflicting generic facts)
+- UPDATE: New memory explicitly supersedes existing due to a real-world change, direct correction, or chronological progression. Replace existing. (e.g., "moved cities", "switched tools", "now wants detailed explanations")
+- CONFLICT: New memory directly contradicts existing with no chronological marker or evidence of change. Flag both. (same topic, opposite claim, conflicting generic facts)
 
-RULE — UPDATE requires explicit change language: words like "moved", "switched", "now uses", "changed to", "no longer". Absence of change language means CONFLICT, not UPDATE.
+RULE — For mutually exclusive preferences or states (e.g., "concise" vs "detailed", living in one city vs another), if the new memory includes change language ("switched", "now", "recently moved"), it is an UPDATE. If it lacks change language and is just opposite, it is a CONFLICT. Never use ADD for mutually exclusive opposites.
 
 EXAMPLES:
 
