@@ -1,5 +1,6 @@
 import sys
 import os
+import traceback
 from loguru import logger
 
 def _format_record(record):
@@ -12,7 +13,15 @@ def _format_record(record):
     )
     if record["extra"]:
         extra_items = ", ".join(f"{key}={value}" for key, value in record["extra"].items())
-        return f"{base} | {extra_items}\n"
+        base = f"{base} | {extra_items}"
+
+    if record["exception"]:
+        exc = record["exception"]
+        traceback_text = "".join(
+            traceback.format_exception(exc.type, exc.value, exc.traceback)
+        ).rstrip()
+        return f"{base}\n{traceback_text}\n"
+
     return f"{base}\n"
 
 def setup_logger():

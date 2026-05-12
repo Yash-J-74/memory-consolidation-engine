@@ -21,6 +21,12 @@ async def ingest_session(
 ):
     start_time = time.time()
     session_id = f"ses_{uuid.uuid4().hex[:8]}"
+    logger.info(
+        "Session ingestion started",
+        session_id=session_id,
+        user_id=request.user_id,
+        conversation_length=len(request.conversation),
+    )
     
     # 1. Extraction Pipeline
     extraction_pipeline = ExtractionPipeline()
@@ -152,12 +158,13 @@ async def ingest_session(
             
         except Exception as e:
             db.rollback()
-            logger.error(
+            logger.exception(
                 "Memory processing failed",
+                session_id=session_id,
                 user_id=request.user_id,
+                extraction_index=idx,
+                memory_type=ext_mem.memory_type if ext_mem else "unknown",
                 content=ext_mem.content if ext_mem else "unknown",
-                error=str(e),
-                exc_info=True   # includes full traceback in structured log
             )
             counts["skipped"] += 1
 
@@ -180,6 +187,19 @@ async def ingest_session(
     insert_session(db, session_record)
     db.commit()
 
+    logger.info(
+        "Session ingestion completed",
+        session_id=session_id,
+        user_id=request.user_id,
+        duration_ms=duration_ms,
+        extracted=counts["extracted"],
+        add=counts["add"],
+        noop=counts["noop"],
+        update=counts["update"],
+        conflict=counts["conflict"],
+        skipped=counts["skipped"],
+    )
+
     return IngestionResult(
         session_id=session_id,
         user_id=request.user_id,
@@ -197,8 +217,10 @@ async def get_session_trace(
     session_id: str,
     db: sqlite3.Connection = Depends(get_db)
 ):
+    logger.info("Session trace requested", session_id=session_id)
     session = get_session_by_id(db, session_id)
     if not session:
+        logger.warning("Session trace requested for missing session", session_id=session_id)
         raise HTTPException(status_code=404, detail="Session not found")
     
     logs = get_consolidation_logs_by_session(db, session_id)

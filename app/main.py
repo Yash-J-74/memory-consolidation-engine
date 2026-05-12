@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from app.api import health, sessions, memories, admin
 from app.db.database import init_db, get_db_connection
+from app.core.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,12 +34,25 @@ app.add_middleware(
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     detail = exc.detail
+    logger.warning(
+        "HTTP exception raised",
+        method=request.method,
+        path=request.url.path,
+        status_code=exc.status_code,
+        detail=detail,
+    )
     if isinstance(detail, str):
         return JSONResponse(status_code=exc.status_code, content={"error": detail, "detail": {}})
     return JSONResponse(status_code=exc.status_code, content={"error": "HTTP Exception", "detail": detail})
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(
+        "Request validation failed",
+        method=request.method,
+        path=request.url.path,
+        errors=exc.errors(),
+    )
     return JSONResponse(
         status_code=422,
         content={"error": "Validation Error", "detail": {"errors": exc.errors()}}
@@ -46,6 +60,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
+    logger.exception(
+        "Unhandled server error",
+        method=request.method,
+        path=request.url.path,
+    )
     return JSONResponse(
         status_code=500,
         content={"error": "Internal Server Error", "detail": {"message": str(exc)}}
@@ -56,3 +75,15 @@ app.include_router(health.router)
 app.include_router(sessions.router)
 app.include_router(memories.router)
 app.include_router(admin.router)
+
+if __name__ == "__main__":
+    # Run with `python -m app.main` to enable auto-reload on changes within the "app" directory
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        reload_dirs=["app"],
+    )
