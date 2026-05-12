@@ -156,6 +156,7 @@ async def threshold_sweep(request: ThresholdSweepRequest):
                     ConsolidationLog(
                         id=f"log_{uuid.uuid4().hex[:12]}",
                         user_id=request.user_id,
+                        session_id=f"sweep_{session_index}",
                         new_memory_id=new_memory_id if decision != "NOOP" else "disposed",
                         decision=decision,
                         existing_memory_id=result.existing_memory_id,
